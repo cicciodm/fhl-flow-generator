@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@overnightjs/core": "^1.6.15",
-    "@overnightjs/logger": "^1.1.10"
+    "@overnightjs/logger": "^1.1.10",
+    "npx": "^10.2.2"
   }
 }
