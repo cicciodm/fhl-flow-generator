@@ -1,0 +1,27 @@
+.gameBoardContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gameBoard {
+  width: 600px;
+  height: 600px;
+  display: grid;
+  grid-template-rows: repeat(var(--rowNum), auto, );
+  grid-template-columns: repeat(var(--colNum), auto);
+}
+
+.gameCell {
+  border: 3px solid snow;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot {
+  height: 80%;
+  width: 80%;
+  border-radius: 50%;
+}
