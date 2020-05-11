@@ -16,7 +16,9 @@ export interface Point {
 
 interface GameState {
   isComplete: boolean;
-  cellStateMap: { [coordinates: string]: GamePiece }
+  cellStateMap: { [coordinates: string]: GamePiece };
+  isDrawing: boolean;
+  drawingColor: string;
 }
 
 export interface GamePiece {
@@ -24,7 +26,7 @@ export interface GamePiece {
   piece: Piece
 }
 
-export type Piece = "empty" | "dot" | "upright" | "upleft" | "dowright" | "downleft";
+export type Piece = "empty" | "dot" | "upright" | "upleft" | "dowright" | "downleft" | "updown" | "leftright";
 
 export default function GameBoard(): JSX.Element {
   const level = levels[0] as Level;
@@ -42,7 +44,7 @@ export default function GameBoard(): JSX.Element {
   return (
     <div className={"gameBoardContainer"}>
       <div className={"gameBoard"}>
-        {getGameComponents(gameState, xs, ys)}
+        {getGameComponents(gameState, xs, ys, setGameState)}
       </div>
     </div>
   );
@@ -51,7 +53,9 @@ export default function GameBoard(): JSX.Element {
 function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): GameState {
   const gameState: GameState = {
     isComplete: false,
-    cellStateMap: {}
+    cellStateMap: {},
+    isDrawing: false,
+    drawingColor: "none"
   }
 
   ys.forEach(y => {
@@ -61,7 +65,7 @@ function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): Game
         color: definedDot.color,
         piece: "dot"
       } : {
-          color: "transparent",
+          color: "none",
           piece: "empty"
         };
     });
@@ -69,12 +73,17 @@ function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): Game
   return gameState;
 }
 
-function getGameComponents(gameState: GameState, xs: number[], ys: number[]): JSX.Element[] {
+function getGameComponents(
+  gameState: GameState,
+  xs: number[],
+  ys: number[],
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>
+): JSX.Element[] {
   return ys.flatMap(y => {
     return xs.map(x => {
       const gamePiece = gameState.cellStateMap["" + x + y];
       return (
-        <div className={"gameCell"} key={"" + x + y}>
+        <div className={"gameCell"} key={"" + x + y} onClick={() => startDrawing(gamePiece, gameState, setGameState)}>
           {getInnerCellForGamePiece(gamePiece)}
         </div>
       );
@@ -88,5 +97,22 @@ function getInnerCellForGamePiece(gamePiece: GamePiece): JSX.Element | null {
       return <div style={{ backgroundColor: gamePiece.color }} className={"dot"}></div>
     default:
       return null;
+  }
+}
+
+function startDrawing(
+  gamePiece: GamePiece,
+  gameState: GameState,
+  setGameState: React.Dispatch<React.SetStateAction<GameState>>
+): void {
+  // Already drawing, reset
+  if (gameState.isDrawing) {
+    setGameState({ ...gameState, isDrawing: false, drawingColor: "none" })
+    return;
+  }
+
+  // Set DrawingState
+  if (gamePiece.piece !== "empty") {
+    setGameState({ ...gameState, isDrawing: true, drawingColor: gamePiece.color })
   }
 }
