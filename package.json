@@ -1,0 +1,19 @@
+{
+  "name": "fhl-flow-generator",
+  "version": "1.0.0",
+  "description": "Fhl Project: generate Flow levels",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cicciodm/fhl-flow-generator.git"
+  },
+  "author": "Frdim",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cicciodm/fhl-flow-generator/issues"
+  },
+  "homepage": "https://github.com/cicciodm/fhl-flow-generator#readme"
+}
