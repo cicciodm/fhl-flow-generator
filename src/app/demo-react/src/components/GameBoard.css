@@ -9,20 +9,52 @@
   width: 600px;
   height: 600px;
   display: grid;
-  grid-template-rows: repeat(var(--rowNum), auto, );
+  grid-template-rows: repeat(var(--rowNum), auto);
   grid-template-columns: repeat(var(--colNum), auto);
 }
 
 .gameCell {
   border: 3px solid snow;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-rows: repeat(3, auto);
+  grid-template-columns: repeat(3, auto);
+  grid-template-areas: 
+    ". up ."
+    "left dot right" 
+    ". down ."
+  ;
   cursor: pointer;
 }
 
 .dot {
-  height: 80%;
-  width: 80%;
+  grid-area: dot;
+  height: 200%;
+  width: 200%;
   border-radius: 50%;
+  justify-self: center;
+  align-self: center;
+}
+
+.left {
+  height: 100%;
+  width: 100%;
+  grid-area: left / left / dot / dot;
+}
+
+.right {
+  height: 100%;
+  width: 100%;
+  grid-area: dot / dot / right / right;
+}
+
+.up {
+  height: 100%;
+  width: 100%;
+  grid-area: up / up / dot / dot;
+}
+
+.down {
+  height: 100%;
+  width: 100%;
+  grid-area: dot / dot / down / down;
 }

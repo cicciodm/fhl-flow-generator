@@ -1,7 +1,7 @@
 import React from 'react';
 import levels from "../levels/levels.json";
 import "./GameBoard.css"
-import { range } from "lodash";
+import { range, difference } from "lodash";
 
 export interface Level {
   size: number;
@@ -16,19 +16,20 @@ export interface Point {
 
 interface GameState {
   isComplete: boolean;
-  cellStateMap: { [coordinates: string]: GamePiece };
+  cellStateMap: { [coordinates: string]: GameCell };
   isDrawing: boolean;
   drawingColor: string;
+  previousCell: GameCell | null;
 }
 
-export interface GamePiece {
+export interface GameCell {
   x: number,
   y: number,
   color: string,
   pieces: Piece[]
 }
 
-export type Piece = "empty" | "dot" | "upright" | "upleft" | "dowright" | "downleft" | "updown" | "leftright";
+export type Piece = "empty" | "dot" | "down" | "left" | "up" | "right";
 
 type SetStateCallback = React.Dispatch<React.SetStateAction<GameState>>;
 
@@ -59,7 +60,8 @@ function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): Game
     isComplete: false,
     cellStateMap: {},
     isDrawing: false,
-    drawingColor: "none"
+    drawingColor: "none",
+    previousCell: null
   }
 
   ys.forEach(y => {
@@ -89,57 +91,135 @@ function getGameComponents(
 ): JSX.Element[] {
   return ys.flatMap(y => {
     return xs.map(x => {
-      const gamePiece = gameState.cellStateMap["" + x + y];
+      const gameCell = gameState.cellStateMap["" + x + y];
       return (
         <div
           className={"gameCell"}
           key={"" + x + y}
-          onClick={() => startDrawing(gamePiece, gameState, setGameState)}
-          // onMouseEnter={(e) => mouseEnteredInCell(x, y, gamePiece, gameState, setGameState)}
-          onMouseLeave={(e) => mouseLeftCell(gamePiece, gameState, setGameState)}
+          onClick={() => startDrawing(gameCell, gameState, setGameState)}
+          onMouseEnter={() => mouseEnteredCell(gameCell, gameState, setGameState)}
+          onMouseLeave={() => mouseLeftCell(gameCell, gameState, setGameState)}
         >
-          {getInnerCellForGamePiece(gamePiece)}
+          {getInnerCellForGamePiece(gameCell)}
         </div>
       );
     });
   });
 }
 
-function getInnerCellForGamePiece(gamePiece: GamePiece): JSX.Element[] {
-  const graphicalElements = [];
+function getInnerCellForGamePiece(gameCell: GameCell): JSX.Element[] {
+  return gameCell.pieces.map(piece => {
+    if (piece === "empty") {
+      return <></>;
+    }
 
-  if (hasPiece("dot", gamePiece)) {
-    graphicalElements.push(<div style={{ backgroundColor: gamePiece.color }} className={"dot"}></div>);
-  }
-
-  return graphicalElements;
+    const isDot = piece === "dot";
+    return (
+      <div
+        style={{ backgroundColor: gameCell.color }}
+        className={piece}>
+      </div>
+    );
+  });
 }
 
 function startDrawing(
-  gamePiece: GamePiece,
+  gameCell: GameCell,
   gameState: GameState,
   setGameState: SetStateCallback
 ): void {
   // Already drawing, reset
   if (gameState.isDrawing) {
-    setGameState({ ...gameState, isDrawing: false, drawingColor: "none" })
+    setGameState({ ...gameState, isDrawing: false, drawingColor: "none", previousCell: null })
     return;
   }
 
   // Set DrawingState
-  if (hasPiece("empty", gamePiece)) {
-    setGameState({ ...gameState, isDrawing: true, drawingColor: gamePiece.color })
+  if (!hasPiece("empty", gameCell)) {
+    setGameState({ ...gameState, isDrawing: true, drawingColor: gameCell.color, previousCell: gameCell })
   }
 }
 
+function mouseEnteredCell(
+  destinationCell: GameCell,
+  gameState: GameState,
+  setGameState: SetStateCallback
+): void {
+  if (!gameState.isDrawing || !gameState.previousCell) {
+    return;
+  }
+
+  const sourceCell = gameState.previousCell;
+
+  const [source, destination] = getPiecesForDirection(sourceCell, destinationCell);
+
+  if (source === "empty" && destination === "empty") {
+    return;
+  }
+
+  const newSource: GameCell = {
+    ...sourceCell,
+    color: gameState.drawingColor,
+    pieces: [...(difference(sourceCell.pieces, ["empty" as Piece])), source],
+  }
+
+
+  const newDestination: GameCell = {
+    ...destinationCell,
+    color: gameState.drawingColor,
+    pieces: [...(difference(destinationCell.pieces, ["empty" as Piece])), destination],
+  }
+
+  const newCellStateMap = {
+    ...gameState.cellStateMap
+  }
+
+  newCellStateMap["" + newSource.x + newSource.y] = newSource;
+  newCellStateMap["" + newDestination.x + newDestination.y] = newDestination;
+
+  const newGameState = {
+    ...gameState,
+    cellStateMap: newCellStateMap,
+    previousCell: newDestination
+  }
+
+  setGameState(newGameState);
+}
+
 function mouseLeftCell(
-  gamePiece: GamePiece,
+  gamePiece: GameCell,
   gameState: GameState,
   setGameState: SetStateCallback
 ): void {
 
 }
 
-function hasPiece(needle: Piece, haystack: GamePiece): boolean {
+function getPiecesForDirection(source: GameCell, destination: GameCell): Piece[] {
+  const pieces: Piece[] = [];
+
+  const verticalMovement = source.y - destination.y;
+  const horizontalMovement = source.x - destination.x;
+
+  if (!(verticalMovement || horizontalMovement)) {
+    return ["empty", "empty"];
+  }
+
+  if (verticalMovement > 0) {
+    // Going up
+    return ["up", "down"];
+  } else if (verticalMovement < 0) {
+    // going down
+    return ["down", "up"];
+  } else if (horizontalMovement > 0) {
+    // Going right
+    return ["left", "right"];
+  } else if (horizontalMovement < 0) {
+    // going up
+    return ["right", "left"];
+  }
+  return pieces;
+}
+
+function hasPiece(needle: Piece, haystack: GameCell): boolean {
   return haystack.pieces.some(piece => piece === needle)
 }
