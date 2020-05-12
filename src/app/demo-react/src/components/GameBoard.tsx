@@ -1,20 +1,10 @@
 import React from 'react';
-import levels from "../levels/levels.json";
+import levelConfig from "../data/levels/easy.json";
 import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
+import { Level } from "../../../../types/LevelConfig";
 
-export interface Level {
-  size: number;
-  points: Point[];
-}
-
-export interface Point {
-  color: string,
-  x: number,
-  y: number
-};
-
-interface GameState {
+interface LevelState {
   isComplete: boolean;
   cellStateMap: CellStateMap;
   isDrawing: boolean;
@@ -33,17 +23,17 @@ export interface GameCell {
 
 export type Piece = "empty" | "dot" | "down" | "left" | "up" | "right";
 
-type SetStateCallback = React.Dispatch<React.SetStateAction<GameState>>;
+type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState>>;
 
 export default function GameBoard(): JSX.Element {
-  const level = levels[0] as Level;
+  const level = levelConfig.levels[0] as Level;
   const size = level.size;
 
   let xs = range(size);
   let ys = range(size);
 
 
-  const [gameState, setGameState] = React.useState<GameState>(getGameStateFromConfig(level, xs, ys));
+  const [levelState, setLevelState] = React.useState<LevelState>(getLevelStateFromConfig(level, xs, ys));
 
   document.documentElement.style.setProperty("--rowNum", level.size + "");
   document.documentElement.style.setProperty("--colNum", level.size + "");
@@ -51,17 +41,17 @@ export default function GameBoard(): JSX.Element {
   return (
     <div className={"gameBoardContainer"}>
       <div className={"gameBoard"}>
-        {getGameComponents(gameState, xs, ys, setGameState)}
+        {getGameComponents(levelState, xs, ys, setLevelState)}
       </div>
       <div className={"completionIndicator"}>
-        {"Level Complete: " + gameState.isComplete}
+        {"Level Complete: " + levelState.isComplete}
       </div>
     </div>
   );
 }
 
-function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): GameState {
-  const gameState: GameState = {
+function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): LevelState {
+  const levelState: LevelState = {
     isComplete: false,
     cellStateMap: {},
     isDrawing: false,
@@ -72,7 +62,7 @@ function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): Game
   ys.forEach(y => {
     xs.forEach(x => {
       const definedDot = config.points.find(point => point.x === x && point.y === y);
-      gameState.cellStateMap["" + x + y] = definedDot ? {
+      levelState.cellStateMap["" + x + y] = definedDot ? {
         x,
         y,
         color: definedDot.color,
@@ -85,24 +75,24 @@ function getGameStateFromConfig(config: Level, xs: number[], ys: number[]): Game
         };
     });
   });
-  return gameState;
+  return levelState;
 }
 
 function getGameComponents(
-  gameState: GameState,
+  levelState: LevelState,
   xs: number[],
   ys: number[],
-  setGameState: SetStateCallback
+  setLevelState: SetLevelStateCallback
 ): JSX.Element[] {
   return ys.flatMap(y => {
     return xs.map(x => {
-      const gameCell = gameState.cellStateMap["" + x + y];
+      const gameCell = levelState.cellStateMap["" + x + y];
       return (
         <div
           className={"gameCell"}
           key={"" + x + y}
-          onClick={() => startDrawing(gameCell, gameState, setGameState)}
-          onMouseEnter={() => mouseEnteredCell(gameCell, gameState, setGameState)}
+          onClick={() => startDrawing(gameCell, levelState, setLevelState)}
+          onMouseEnter={() => mouseEnteredCell(gameCell, levelState, setLevelState)}
         >
           {getInnerCellForGamePiece(gameCell)}
         </div>
@@ -128,32 +118,32 @@ function getInnerCellForGamePiece(gameCell: GameCell): JSX.Element[] {
 
 function startDrawing(
   gameCell: GameCell,
-  gameState: GameState,
-  setGameState: SetStateCallback
+  levelState: LevelState,
+  setLevelState: SetLevelStateCallback
 ): void {
   // Already drawing, reset
-  if (gameState.isDrawing) {
-    const levelComplete = isLevelComplete(gameState.cellStateMap);
-    setGameState({ ...gameState, isDrawing: false, drawingColor: "none", previousCell: null, isComplete: levelComplete })
+  if (levelState.isDrawing) {
+    const levelComplete = isLevelComplete(levelState.cellStateMap);
+    setLevelState({ ...levelState, isDrawing: false, drawingColor: "none", previousCell: null, isComplete: levelComplete })
     return;
   }
 
   // Set DrawingState
   if (!hasPiece("empty", gameCell)) {
-    setGameState({ ...gameState, isDrawing: true, drawingColor: gameCell.color, previousCell: gameCell })
+    setLevelState({ ...levelState, isDrawing: true, drawingColor: gameCell.color, previousCell: gameCell })
   }
 }
 
 function mouseEnteredCell(
   destinationCell: GameCell,
-  gameState: GameState,
-  setGameState: SetStateCallback
+  levelState: LevelState,
+  setLevelState: SetLevelStateCallback
 ): void {
-  if (!gameState.isDrawing || !gameState.previousCell) {
+  if (!levelState.isDrawing || !levelState.previousCell) {
     return;
   }
 
-  const sourceCell = gameState.previousCell;
+  const sourceCell = levelState.previousCell;
 
   const [source, destination] = getPiecesForDirection(sourceCell, destinationCell);
 
@@ -164,31 +154,30 @@ function mouseEnteredCell(
 
   const newSource: GameCell = {
     ...sourceCell,
-    color: gameState.drawingColor,
+    color: levelState.drawingColor,
     pieces: [...(difference(sourceCell.pieces, ["empty" as Piece])), source],
   }
 
-
   const newDestination: GameCell = {
     ...destinationCell,
-    color: gameState.drawingColor,
+    color: levelState.drawingColor,
     pieces: [...(difference(destinationCell.pieces, ["empty" as Piece])), destination],
   }
 
   const newCellStateMap = {
-    ...gameState.cellStateMap
+    ...levelState.cellStateMap
   }
 
   newCellStateMap["" + newSource.x + newSource.y] = newSource;
   newCellStateMap["" + newDestination.x + newDestination.y] = newDestination;
 
-  const newGameState = {
-    ...gameState,
+  const newLevelState = {
+    ...levelState,
     cellStateMap: newCellStateMap,
     previousCell: newDestination,
   }
 
-  setGameState(newGameState);
+  setLevelState(newLevelState);
 }
 
 function getPiecesForDirection(source: GameCell, destination: GameCell): Piece[] {

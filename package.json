@@ -25,8 +25,12 @@
   "dependencies": {
     "@overnightjs/core": "^1.6.15",
     "@overnightjs/logger": "^1.1.10",
+    "@types/jimp": "^0.2.28",
     "@types/lodash": "^4.14.150",
+    "@types/node": "^13.13.5",
+    "jimp": "^0.10.3",
     "lodash": "^4.17.15",
-    "npx": "^10.2.2"
+    "npx": "^10.2.2",
+    "ntc": "0.0.1"
   }
 }
