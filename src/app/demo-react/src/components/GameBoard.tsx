@@ -1,7 +1,7 @@
 import React from 'react';
 import levels from "../levels/levels.json";
 import "./GameBoard.css"
-import { range, difference } from "lodash";
+import { range, difference, groupBy } from "lodash";
 
 export interface Level {
   size: number;
@@ -16,11 +16,13 @@ export interface Point {
 
 interface GameState {
   isComplete: boolean;
-  cellStateMap: { [coordinates: string]: GameCell };
+  cellStateMap: CellStateMap;
   isDrawing: boolean;
   drawingColor: string;
   previousCell: GameCell | null;
 }
+
+type CellStateMap = { [coordinates: string]: GameCell };
 
 export interface GameCell {
   x: number,
@@ -50,6 +52,9 @@ export default function GameBoard(): JSX.Element {
     <div className={"gameBoardContainer"}>
       <div className={"gameBoard"}>
         {getGameComponents(gameState, xs, ys, setGameState)}
+      </div>
+      <div className={"completionIndicator"}>
+        {"Level Complete: " + gameState.isComplete}
       </div>
     </div>
   );
@@ -112,7 +117,6 @@ function getInnerCellForGamePiece(gameCell: GameCell): JSX.Element[] {
       return <></>;
     }
 
-    const isDot = piece === "dot";
     return (
       <div
         style={{ backgroundColor: gameCell.color }}
@@ -129,7 +133,8 @@ function startDrawing(
 ): void {
   // Already drawing, reset
   if (gameState.isDrawing) {
-    setGameState({ ...gameState, isDrawing: false, drawingColor: "none", previousCell: null })
+    const levelComplete = isLevelComplete(gameState.cellStateMap);
+    setGameState({ ...gameState, isDrawing: false, drawingColor: "none", previousCell: null, isComplete: levelComplete })
     return;
   }
 
@@ -177,14 +182,10 @@ function mouseEnteredCell(
   newCellStateMap["" + newSource.x + newSource.y] = newSource;
   newCellStateMap["" + newDestination.x + newDestination.y] = newDestination;
 
-  // We reached a dot and we should stop
-  const shouldEndDrawing = hasPiece("dot", newDestination);
-
   const newGameState = {
     ...gameState,
     cellStateMap: newCellStateMap,
-    isDrawing: !shouldEndDrawing,
-    previousCell: shouldEndDrawing ? null : newDestination,
+    previousCell: newDestination,
   }
 
   setGameState(newGameState);
@@ -233,4 +234,84 @@ function getPiecesForDirection(source: GameCell, destination: GameCell): Piece[]
 
 function hasPiece(needle: Piece, haystack: GameCell): boolean {
   return haystack.pieces.some(piece => piece === needle)
+}
+
+// Level is complete if:
+// - all cells are not empty
+// - All dots are connected by a path of the right color
+function isLevelComplete(cellStateMap: CellStateMap): boolean {
+  const gameCells = Object.values(cellStateMap);
+
+  const allCellsFull = gameCells.every(gameCell => !hasPiece("empty", gameCell));
+
+  const dotGroups = groupBy(gameCells.filter(cell => hasPiece("dot", cell)), cell => cell.color);
+  const allDotsConnected = Object.keys(dotGroups).every(color => correctPathExists(dotGroups[color][0], cellStateMap));
+
+  return allDotsConnected && allCellsFull;
+}
+
+function correctPathExists(start: GameCell, cellStateMap: CellStateMap): boolean {
+  let currentCell = start;
+  let directionToFollow = start.pieces.filter(piece => piece !== "dot")[0];
+
+  do {
+    let nextY = currentCell.y;
+    let nextX = currentCell.x;
+    let oppositeDirection: Piece;
+
+    // Move
+    switch (directionToFollow) {
+      case "up": {
+        nextY -= 1;
+        oppositeDirection = "down";
+        break;
+      }
+      case "down": {
+        nextY += 1;
+        oppositeDirection = "up";
+        break;
+      }
+      case "right": {
+        nextX += 1;
+        oppositeDirection = "left";
+        break;
+      }
+      case "left": {
+        oppositeDirection = "right";
+        nextX -= 1;
+        break;
+      }
+      default:
+        // Hit an empty, not good.
+        return false;
+    }
+
+    const nextCell = cellStateMap["" + nextX + nextY];
+
+    // Check for correctness
+
+    // We went out of bounds, fail
+    if (!nextCell) {
+      return false;
+    }
+
+    // If the color is different, there is no path
+    if (currentCell.color !== nextCell.color) {
+      return false;
+    }
+
+    // There is no connecting path from the previous cell to the current cell
+    // So if we were going "up", we need to make sure that there's a "down"
+    if (!hasPiece(oppositeDirection, nextCell)) {
+      return false;
+    }
+
+    // Step:
+    // Change cells
+    // The direction we are moving is the other direction which is not the one we came from
+    currentCell = nextCell;
+    directionToFollow = currentCell.pieces.filter(piece => piece !== oppositeDirection)[0];
+  } while (!hasPiece("dot", currentCell))
+
+  return true;
 }

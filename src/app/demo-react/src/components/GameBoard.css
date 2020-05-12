@@ -5,12 +5,18 @@
   justify-content: center;
 }
 
+.completionIndicator {
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
 .gameBoard {
   width: 600px;
   height: 600px;
   display: grid;
   grid-template-rows: repeat(var(--rowNum), auto);
   grid-template-columns: repeat(var(--colNum), auto);
+  margin-bottom: 24px;
 }
 
 .gameCell {
