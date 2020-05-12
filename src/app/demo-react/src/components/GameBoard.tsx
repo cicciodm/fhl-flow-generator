@@ -98,7 +98,6 @@ function getGameComponents(
           key={"" + x + y}
           onClick={() => startDrawing(gameCell, gameState, setGameState)}
           onMouseEnter={() => mouseEnteredCell(gameCell, gameState, setGameState)}
-          onMouseLeave={() => mouseLeftCell(gameCell, gameState, setGameState)}
         >
           {getInnerCellForGamePiece(gameCell)}
         </div>
@@ -153,6 +152,7 @@ function mouseEnteredCell(
 
   const [source, destination] = getPiecesForDirection(sourceCell, destinationCell);
 
+  // Invalid move, do nothing
   if (source === "empty" && destination === "empty") {
     return;
   }
@@ -177,21 +177,17 @@ function mouseEnteredCell(
   newCellStateMap["" + newSource.x + newSource.y] = newSource;
   newCellStateMap["" + newDestination.x + newDestination.y] = newDestination;
 
+  // We reached a dot and we should stop
+  const shouldEndDrawing = hasPiece("dot", newDestination);
+
   const newGameState = {
     ...gameState,
     cellStateMap: newCellStateMap,
-    previousCell: newDestination
+    isDrawing: !shouldEndDrawing,
+    previousCell: shouldEndDrawing ? null : newDestination,
   }
 
   setGameState(newGameState);
-}
-
-function mouseLeftCell(
-  gamePiece: GameCell,
-  gameState: GameState,
-  setGameState: SetStateCallback
-): void {
-
 }
 
 function getPiecesForDirection(source: GameCell, destination: GameCell): Piece[] {
@@ -200,24 +196,39 @@ function getPiecesForDirection(source: GameCell, destination: GameCell): Piece[]
   const verticalMovement = source.y - destination.y;
   const horizontalMovement = source.x - destination.x;
 
+  // Diagonal movement is not allowed
   if (!(verticalMovement || horizontalMovement)) {
     return ["empty", "empty"];
   }
 
-  if (verticalMovement > 0) {
-    // Going up
-    return ["up", "down"];
-  } else if (verticalMovement < 0) {
-    // going down
-    return ["down", "up"];
-  } else if (horizontalMovement > 0) {
-    // Going right
-    return ["left", "right"];
-  } else if (horizontalMovement < 0) {
-    // going up
-    return ["right", "left"];
+  // Movement bigger than 1 is not allowed
+  if (Math.abs(verticalMovement) > 1 || Math.abs(horizontalMovement) > 1) {
+    return ["empty", "empty"];
   }
-  return pieces;
+
+  // A move is only valid if the destination is empty, or has a dot of the correct color
+  if (
+    hasPiece("empty", destination) ||
+    (hasPiece("dot", destination) && source.color === destination.color)
+  ) {
+    if (verticalMovement > 0) {
+      // Going up
+      return ["up", "down"];
+    } else if (verticalMovement < 0) {
+      // going down
+      return ["down", "up"];
+    } else if (horizontalMovement > 0) {
+      // Going right
+      return ["left", "right"];
+    } else if (horizontalMovement < 0) {
+      // going up
+      return ["right", "left"];
+    }
+    return pieces;
+  } else {
+    return ["empty", "empty"];
+  }
+
 }
 
 function hasPiece(needle: Piece, haystack: GameCell): boolean {
