@@ -4,6 +4,10 @@ import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
 import { Level } from "../../../../types/LevelConfig";
 
+interface GameState {
+  currentLevel: number;
+}
+
 interface LevelState {
   isComplete: boolean;
   cellStateMap: CellStateMap;
@@ -23,34 +27,54 @@ export interface GameCell {
 
 export type Piece = "empty" | "dot" | "down" | "left" | "up" | "right";
 
-type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState>>;
+type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState | null>>;
 
 export default function GameBoard(): JSX.Element {
-  const level = levelConfig.levels[0] as Level;
-  const size = level.size;
+  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0 });
+
+  const level = levelConfig.levels[gameState.currentLevel] as Level;
+
+  const size = level?.size || 5;
+  document.documentElement.style.setProperty("--rowNum", size + "");
+  document.documentElement.style.setProperty("--colNum", size + "");
 
   let xs = range(size);
   let ys = range(size);
 
+  const [levelState, setLevelState] = React.useState<LevelState | null>(getLevelStateFromConfig(level, xs, ys));
 
-  const [levelState, setLevelState] = React.useState<LevelState>(getLevelStateFromConfig(level, xs, ys));
-
-  document.documentElement.style.setProperty("--rowNum", level.size + "");
-  document.documentElement.style.setProperty("--colNum", level.size + "");
+  if (!level || !levelState) {
+    return <h1 className={"winrar"}>A WINRAR IS YOU</h1>;
+  }
 
   return (
     <div className={"gameBoardContainer"}>
+      <h1 className={"levelNumber"}>{"Level " + (gameState.currentLevel + 1)}</h1>
       <div className={"gameBoard"}>
         {getGameComponents(levelState, xs, ys, setLevelState)}
       </div>
-      <div className={"completionIndicator"}>
-        {"Level Complete: " + levelState.isComplete}
-      </div>
+      {levelState.isComplete && (
+        <button className={"nextLevelButton"} onClick={() => {
+          const nextLevelIndex = gameState.currentLevel + 1;
+          const nextLevel = levelConfig.levels[nextLevelIndex];
+          setGameState({ currentLevel: gameState.currentLevel + 1 });
+          if (nextLevel) {
+            const nextLevelState = getLevelStateFromConfig(nextLevel, xs, ys);
+            setLevelState(nextLevelState);
+          }
+        }}>
+          Next Level
+        </button>
+      )}
     </div>
   );
 }
 
-function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): LevelState {
+function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): LevelState | null {
+  if (!config) {
+    return null;
+  }
+
   const levelState: LevelState = {
     isComplete: false,
     cellStateMap: {},

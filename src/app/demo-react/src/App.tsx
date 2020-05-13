@@ -6,8 +6,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Flow</h1>
-        <div>Taken from the Flow mobile game, connect dots of the same color with a continuous line, filling the whole board</div>
+        <h1 className={"title"}>Flow</h1>
       </header>
       <GameBoard />
     </div>

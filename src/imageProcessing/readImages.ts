@@ -17,27 +17,33 @@ const TOP_OFFSET = 504;
 const xs = range(CELL_SIDE / 2, (CELL_SIDE * (GRID_SIZE + 1)) - CELL_SIDE / 2, CELL_SIDE);
 const ys = xs.map(val => val + TOP_OFFSET);
 
-async function createLevelConfigs(): Promise<void> {
+async function createLevelConfigs(fileName?: string): Promise<void> {
   for (const difficulty of difficulties) {
     const path = "levels/" + difficulty;
-    let files: string[];
+    let files: string[] = fileName ? [fileName] : [];
 
     let levelConfig: LevelConfig = {
       levels: [],
     }
 
-    try {
-      files = readdirSync(path);
-    } catch (e) {
-      throw e;
-    };
+    if (!fileName) {
+      try {
+        files = readdirSync(path);
+      } catch (e) {
+        throw e;
+      };
+    }
 
-    // console.log("Found files", files);
+    console.log("Found files", files);
 
     for (const fileName of files) {
       const imagePath = path + "/" + fileName;
 
       const image = await Jimp.read(imagePath);
+
+      // see if this works
+      image.contrast(0.60);
+      image.color([{ apply: "saturate", params: [70] }]);
 
       const level: Level = {
         size: GRID_SIZE,
@@ -63,8 +69,6 @@ async function createLevelConfigs(): Promise<void> {
       });
       levelConfig.levels.push(level);
     }
-
-    // console.log("In the end, got the following level config", levelConfig);
 
     const configToWrite = JSON.stringify(levelConfig);
     const folderPath = "../app/demo-react/src/data/levels/";
