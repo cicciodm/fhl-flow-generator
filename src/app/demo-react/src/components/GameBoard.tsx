@@ -2,7 +2,7 @@ import React from 'react';
 import levelConfig from "../data/levels/easy.json";
 import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
-import { Level } from "../../../../types/LevelConfig";
+import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelConfig";
 
 interface GameState {
   currentLevel: number;
@@ -15,17 +15,6 @@ interface LevelState {
   drawingColor: string;
   previousCell: GameCell | null;
 }
-
-type CellStateMap = { [coordinates: string]: GameCell };
-
-export interface GameCell {
-  x: number,
-  y: number,
-  color: string,
-  pieces: Piece[]
-}
-
-export type Piece = "empty" | "dot" | "down" | "left" | "up" | "right";
 
 type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState | null>>;
 

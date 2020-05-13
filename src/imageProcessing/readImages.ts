@@ -71,15 +71,18 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
     }
 
     const configToWrite = JSON.stringify(levelConfig);
-    const folderPath = "../app/demo-react/src/data/levels/";
+    const appFolderPath = "../app/demo-react/src/data/levels/";
+    const dataFolderPath = "../data/levels/";
 
     try {
-      mkdirSync(folderPath, { recursive: true });
+      mkdirSync(appFolderPath, { recursive: true });
+      mkdirSync(dataFolderPath, { recursive: true });
     } catch (e) {
 
     }
 
-    writeFileSync(folderPath + "/" + difficulty + ".json", configToWrite, "utf8");
+    writeFileSync(appFolderPath + "/" + difficulty + ".json", configToWrite, "utf8");
+    writeFileSync(dataFolderPath + "/" + difficulty + ".json", configToWrite, "utf8");
   }
 }
 
