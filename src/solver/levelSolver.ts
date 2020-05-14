@@ -1,6 +1,6 @@
 import { CellStateMap, Level, Piece, Point, GameCell } from "src/types/LevelConfig";
 import { range, groupBy, List } from "lodash";
-import levels from "../data/levels/test.json";
+import levels from "../data/levels/easy.json";
 
 type MovesMap = { [coordinates: string]: Piece[] };
 type ListOfPointPairs = [Point, Point][];
@@ -63,7 +63,7 @@ function solveLevel(level: Level): CellStateMap {
 
   walkPathToEnd(start, end, 0, listOfPointPairs, possibleMovesMap, cellStateMap);
 
-  console.log("cellStateMap after solving", JSON.stringify(cellStateMap));
+  console.log("cellStateMap after solving\n", JSON.stringify(cellStateMap));
 
   return cellStateMap;
 }
@@ -99,7 +99,7 @@ function walkPathToEnd(
         const oppositeDirection = getOppositeDirection(move);
         cellStateMap["" + end.x + end.y].pieces.push(oppositeDirection);
         console.log("Adding final move to end", cellStateMap["" + end.x + end.y], oppositeDirection);
-        console.log("End found, checking completion", cellStateMap);
+        console.log("End found, checking completion", JSON.stringify(cellStateMap));
         // We completed this path
         if (isLevelComplete(cellStateMap)) {
           // We are done done
@@ -147,14 +147,22 @@ function walkPathToEnd(
               startEndList,
               possibleMovesMap,
               cellStateMap);
-        }
 
-        if (!wasPathValid) {
-          console.log("We Did not find a valid path to", nextGameCell);
-          // We are not done, and need to walk further from here
-          // console.log("Just reset next cell", cellStateMap[nextCoordinates]);
-          cellStateMap[currentCoordinates].pieces.pop();
-          console.log("Just current cell", cellStateMap[currentCoordinates]);
+          if (!wasPathValid) {
+            console.log("We did recurse down, but did not find a valid path from", start, "to", end);
+            // We are not done, and need to walk further from here
+            cellStateMap[nextCoordinates].color = "none";
+            cellStateMap[nextCoordinates].pieces.pop();
+            console.log("Just reset next cell", cellStateMap[nextCoordinates]);
+            cellStateMap[currentCoordinates].pieces.pop();
+            console.log("Just reset current cell", cellStateMap[currentCoordinates]);
+          }
+        } else {
+          if (!wasPathValid) {
+            console.log("We hit a wall, and did not find a path from", start, "to", end);
+            cellStateMap[currentCoordinates].pieces.pop();
+            console.log("Just reset current cell", cellStateMap[currentCoordinates]);
+          }
         }
       }
     } else {
@@ -190,7 +198,7 @@ function getNextPointInDirection(point: Point, move: Piece): Point {
 function isLevelComplete(cellStateMap: CellStateMap): boolean {
   const gameCells = Object.values(cellStateMap);
 
-  const allCellsFull = true; //gameCells.every(gameCell => !hasPiece("empty", gameCell));
+  const allCellsFull = gameCells.every(gameCell => !hasPiece("empty", gameCell));
 
   const dotGroups = groupBy(gameCells.filter(cell => hasPiece("dot", cell)), cell => cell.color);
   const allDotsConnected = Object.keys(dotGroups).every(color => correctPathExists(dotGroups[color][0], cellStateMap));
