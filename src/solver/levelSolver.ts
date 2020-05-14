@@ -308,4 +308,4 @@ function hasPiece(needle: Piece, haystack: GameCell): boolean {
 
 
 
-solveLevel(testLevels.levels[0]);
+solveLevel(levels.levels[0]);
