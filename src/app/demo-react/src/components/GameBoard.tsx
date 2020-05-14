@@ -87,7 +87,7 @@ function loadCellStateMap(
   if (text) {
     const toCellStateMap = JSON.parse(text) as CellStateMap;
     console.log("parsed", toCellStateMap)
-    setLevelState({ ...levelState, cellStateMap: toCellStateMap });
+    setLevelState({ ...levelState, cellStateMap: toCellStateMap, isComplete: true });
   }
 }
 

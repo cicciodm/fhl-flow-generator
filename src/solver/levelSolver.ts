@@ -1,6 +1,7 @@
 import { CellStateMap, Level, Piece, Point, GameCell } from "src/types/LevelConfig";
 import { range, groupBy, List } from "lodash";
 import levels from "../data/levels/easy.json";
+import testLevels from "../data/levels/test.json";
 
 type MovesMap = { [coordinates: string]: Piece[] };
 type ListOfPointPairs = [Point, Point][];
@@ -61,9 +62,13 @@ function solveLevel(level: Level): CellStateMap {
 
   const [start, end] = listOfPointPairs[0];
 
-  walkPathToEnd(start, end, 0, listOfPointPairs, possibleMovesMap, cellStateMap);
+  const foundSolution = walkPathToEnd(start, end, 0, listOfPointPairs, possibleMovesMap, cellStateMap);
 
-  console.log("cellStateMap after solving\n", JSON.stringify(cellStateMap));
+  if (foundSolution) {
+    console.log("cellStateMap after solving\n", JSON.stringify(cellStateMap));
+  } else {
+    console.log("BIG FAT FAIL");
+  }
 
   return cellStateMap;
 }
@@ -108,8 +113,9 @@ function walkPathToEnd(
         } else {
           console.log("Completed this path, now finding next");
           // We are moving to the next path, for the next color
-          const nextIndex = currentIndex += 1;
+          const nextIndex = currentIndex + 1;
           if (nextIndex === startEndList.length) {
+            console.log("we have gone through the whole list, as index now is", nextIndex, "startEndList", startEndList);
             wasPathValid = true;
           } else {
 
@@ -223,11 +229,14 @@ function getNextPointInDirection(point: Point, move: Piece): Point {
 function isLevelComplete(cellStateMap: CellStateMap): boolean {
   const gameCells = Object.values(cellStateMap);
 
+  console.log("Checking fullness")
+  gameCells.forEach(cell => console.log(cell, !hasPiece("empty", cell)));
   const allCellsFull = gameCells.every(gameCell => !hasPiece("empty", gameCell));
 
   const dotGroups = groupBy(gameCells.filter(cell => hasPiece("dot", cell)), cell => cell.color);
   const allDotsConnected = Object.keys(dotGroups).every(color => correctPathExists(dotGroups[color][0], cellStateMap));
 
+  console.log("Checked for fullness and connectedness", allCellsFull, allDotsConnected);
   return allDotsConnected && allCellsFull;
 }
 
@@ -299,4 +308,4 @@ function hasPiece(needle: Piece, haystack: GameCell): boolean {
 
 
 
-solveLevel(levels.levels[1]);
+solveLevel(testLevels.levels[0]);
