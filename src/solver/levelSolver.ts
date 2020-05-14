@@ -84,77 +84,83 @@ function walkPathToEnd(
   console.log("possible moves from point", start, "are", movesFromStart);
 
   movesFromStart.forEach(move => {
-    console.log("testing", move);
-    // assume this works
-    const currentCoordinates = "" + start.x + start.y;
-    const piecesLeft = cellStateMap[currentCoordinates].pieces.filter(piece => piece !== "empty"); //remove empty
-    piecesLeft.push(move);
-    cellStateMap[currentCoordinates].pieces = piecesLeft;
-    console.log("as we are moving towards", move, "cellStateMap at", currentCoordinates, "now has pieces", cellStateMap[currentCoordinates].pieces);
+    if (!wasPathValid) {
+      console.log("testing", move);
+      // assume this works
+      const currentCoordinates = "" + start.x + start.y;
+      const piecesLeft = cellStateMap[currentCoordinates].pieces.filter(piece => piece !== "empty"); //remove empty
+      piecesLeft.push(move);
+      cellStateMap[currentCoordinates].pieces = piecesLeft;
+      console.log("as we are moving towards", move, "cellStateMap at", currentCoordinates, "now has pieces", cellStateMap[currentCoordinates].pieces);
 
-    const nextPoint = getNextPointInDirection(start, move);
-    console.log("The next point in direction", move, "is", nextPoint);
+      const nextPoint = getNextPointInDirection(start, move);
+      console.log("The next point in direction", move, "is", nextPoint);
 
-    console.log("comparing", nextPoint, "to end", end);
-    if (arePointsEqual(nextPoint, end)) {
-      console.log("End found, checking completion", cellStateMap);
-      // We completed this path
-      if (isLevelComplete(cellStateMap)) {
-        // We are done done
-        console.log("Solution found", cellStateMap);
-        wasPathValid = true;
-      } else {
-        console.log("Completed this path, now finding next");
-        // We are moving to the next path, for the next color
-        const nextIndex = currentIndex += 1;
-        if (nextIndex === startEndList.length) {
+      console.log("comparing", nextPoint, "to end", end);
+      if (arePointsEqual(nextPoint, end)) {
+        const oppositeDirection = getOppositeDirection(move);
+        cellStateMap["" + end.x + end.y].pieces.push(oppositeDirection);
+        console.log("Adding final move to end", cellStateMap["" + end.x + end.y], oppositeDirection);
+        console.log("End found, checking completion", cellStateMap);
+        // We completed this path
+        if (isLevelComplete(cellStateMap)) {
+          // We are done done
+          console.log("Solution found", cellStateMap);
           wasPathValid = true;
         } else {
+          console.log("Completed this path, now finding next");
+          // We are moving to the next path, for the next color
+          const nextIndex = currentIndex += 1;
+          if (nextIndex === startEndList.length) {
+            wasPathValid = true;
+          } else {
 
-          const [nextStart, nextEnd] = startEndList[nextIndex];
+            const [nextStart, nextEnd] = startEndList[nextIndex];
 
-          console.log("about to start recursing for", nextStart, nextEnd);
-          wasPathValid = walkPathToEnd(
-            nextStart,
-            nextEnd,
-            nextIndex,
-            startEndList,
-            possibleMovesMap,
-            cellStateMap
-          );
+            console.log("about to start recursing for", nextStart, nextEnd);
+            wasPathValid = walkPathToEnd(
+              nextStart,
+              nextEnd,
+              nextIndex,
+              startEndList,
+              possibleMovesMap,
+              cellStateMap
+            );
+          }
+        }
+      } else {
+        console.log("We have not reached the end");
+        const nextCoordinates = "" + nextPoint.x + nextPoint.y;
+        const nextGameCell = cellStateMap[nextCoordinates];
+        console.log("The Cell corresponding to the next point after moving is", nextGameCell);
+
+        if (nextGameCell && nextGameCell.color === "none") {
+          console.log("We are about to recurse for same path with", nextPoint, end);
+          // We actually move to the next cell!
+          cellStateMap[nextCoordinates].color = start.color;
+          const oppositeDirection = getOppositeDirection(move);
+          cellStateMap[nextCoordinates].pieces.push(oppositeDirection);
+
+          wasPathValid =
+            walkPathToEnd(
+              nextPoint,
+              end,
+              currentIndex,
+              startEndList,
+              possibleMovesMap,
+              cellStateMap);
         }
 
+        if (!wasPathValid) {
+          console.log("We Did not find a valid path", nextGameCell);
+          // We are not done, and need to walk further from here
+          cellStateMap[nextCoordinates].color = "none";
+          cellStateMap[nextCoordinates].pieces.pop();
+          cellStateMap[currentCoordinates].pieces.pop();
+        }
       }
     } else {
-      console.log("We have not reached the end");
-      const nextCoordinates = "" + nextPoint.x + nextPoint.y;
-      const nextGameCell = cellStateMap[nextCoordinates];
-      console.log("The Cell corresponding to the next point after moving is", nextGameCell);
-
-      if (nextGameCell && nextGameCell.color === "none") {
-        console.log("We are about to recurse for same path with", nextPoint, end);
-        // We actually move to the next cell!
-        cellStateMap[nextCoordinates].color = start.color;
-        const oppositeDirection = getOppositeDirection(move);
-        cellStateMap[nextCoordinates].pieces.push(oppositeDirection);
-
-        wasPathValid =
-          walkPathToEnd(
-            nextPoint,
-            end,
-            currentIndex,
-            startEndList,
-            possibleMovesMap,
-            cellStateMap);
-      }
-
-      if (!wasPathValid) {
-        console.log("We Did not find a valid path", nextGameCell);
-        // We are not done, and need to walk further from here
-        cellStateMap[nextCoordinates].color = "none";
-        cellStateMap[nextCoordinates].pieces.pop();
-        cellStateMap[currentCoordinates].pieces.pop();
-      }
+      console.log("Solution already found, so skip");
     }
   });
 
@@ -199,7 +205,7 @@ function correctPathExists(start: GameCell, cellStateMap: CellStateMap): boolean
   let directionToFollow = start.pieces.filter(piece => piece !== "dot")[0];
 
   do {
-    const { x: nextX, y: nextY } = getNextPointInDirection(start, directionToFollow);
+    const { x: nextX, y: nextY } = getNextPointInDirection(currentCell, directionToFollow);
     const oppositeDirection = getOppositeDirection(directionToFollow);
 
     const nextCell = cellStateMap["" + nextX + nextY];
