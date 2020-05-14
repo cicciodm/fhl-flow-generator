@@ -63,9 +63,7 @@ function solveLevel(level: Level): CellStateMap {
 
   walkPathToEnd(start, end, 0, listOfPointPairs, possibleMovesMap, cellStateMap);
 
-  console.log("cellStateMap after solving", cellStateMap);
-
-
+  console.log("cellStateMap after solving", JSON.stringify(cellStateMap));
 
   return cellStateMap;
 }
@@ -85,7 +83,7 @@ function walkPathToEnd(
 
   movesFromStart.forEach(move => {
     if (!wasPathValid) {
-      console.log("testing", move);
+      console.log("testing", move, "from point", start);
       // assume this works
       const currentCoordinates = "" + start.x + start.y;
       const piecesLeft = cellStateMap[currentCoordinates].pieces.filter(piece => piece !== "empty"); //remove empty
@@ -105,7 +103,7 @@ function walkPathToEnd(
         // We completed this path
         if (isLevelComplete(cellStateMap)) {
           // We are done done
-          console.log("Solution found", cellStateMap);
+          console.log("Solution found", JSON.stringify(cellStateMap));
           wasPathValid = true;
         } else {
           console.log("Completed this path, now finding next");
@@ -152,11 +150,11 @@ function walkPathToEnd(
         }
 
         if (!wasPathValid) {
-          console.log("We Did not find a valid path", nextGameCell);
+          console.log("We Did not find a valid path to", nextGameCell);
           // We are not done, and need to walk further from here
-          cellStateMap[nextCoordinates].color = "none";
-          cellStateMap[nextCoordinates].pieces.pop();
+          // console.log("Just reset next cell", cellStateMap[nextCoordinates]);
           cellStateMap[currentCoordinates].pieces.pop();
+          console.log("Just current cell", cellStateMap[currentCoordinates]);
         }
       }
     } else {
