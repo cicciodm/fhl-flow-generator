@@ -6,6 +6,7 @@ import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelCon
 
 interface GameState {
   currentLevel: number;
+  debugOpen: boolean;
 }
 
 interface LevelState {
@@ -19,7 +20,8 @@ interface LevelState {
 type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState | null>>;
 
 export default function GameBoard(): JSX.Element {
-  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0 });
+  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0, debugOpen: false });
+  const areaRef = React.createRef<HTMLTextAreaElement>();
 
   const level = levelConfig.levels[gameState.currentLevel] as Level;
 
@@ -38,6 +40,22 @@ export default function GameBoard(): JSX.Element {
 
   return (
     <div className={"gameBoardContainer"}>
+      <div className={"debugContainer"}>
+        <button className={"debugButton"} onClick={() => setGameState({ ...gameState, debugOpen: !gameState.debugOpen })}>
+          Open debug
+        </button>
+        {gameState.debugOpen && (
+          <div className={"inputContainer"}>
+            <textarea className={"configTextArea"} ref={areaRef}></textarea>
+            <button className={"debugButton"} onClick={() => {
+              loadCellStateMap(areaRef, levelState, setLevelState);
+              setGameState({ ...gameState, debugOpen: !gameState.debugOpen });
+            }}>
+              Load CellStateMap
+            </button>
+          </div>
+        )}
+      </div>
       <h1 className={"levelNumber"}>{"Level " + (gameState.currentLevel + 1)}</h1>
       <div className={"gameBoard"}>
         {getGameComponents(levelState, xs, ys, setLevelState)}
@@ -46,7 +64,7 @@ export default function GameBoard(): JSX.Element {
         <button className={"nextLevelButton"} onClick={() => {
           const nextLevelIndex = gameState.currentLevel + 1;
           const nextLevel = levelConfig.levels[nextLevelIndex];
-          setGameState({ currentLevel: gameState.currentLevel + 1 });
+          setGameState({ currentLevel: gameState.currentLevel + 1, debugOpen: false });
           if (nextLevel) {
             const nextLevelState = getLevelStateFromConfig(nextLevel, xs, ys);
             setLevelState(nextLevelState);
@@ -57,6 +75,20 @@ export default function GameBoard(): JSX.Element {
       )}
     </div>
   );
+}
+
+function loadCellStateMap(
+  ref: React.RefObject<HTMLTextAreaElement>,
+  levelState: LevelState,
+  setLevelState: SetLevelStateCallback
+): void {
+  const text = ref.current?.value;
+  console.log(ref.current?.value);
+  if (text) {
+    const toCellStateMap = JSON.parse(text) as CellStateMap;
+    console.log("parsed", toCellStateMap)
+    setLevelState({ ...levelState, cellStateMap: toCellStateMap });
+  }
 }
 
 function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): LevelState | null {
