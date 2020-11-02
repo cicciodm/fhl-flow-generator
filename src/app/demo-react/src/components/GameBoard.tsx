@@ -4,6 +4,8 @@ import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
 import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelConfig";
 
+const DEFAULT_BOARD_SIZE = 5;
+
 interface GameState {
   currentLevel: number;
   debugOpen: boolean;
@@ -25,7 +27,7 @@ export default function GameBoard(): JSX.Element {
 
   const level = levelConfig.levels[gameState.currentLevel] as Level;
 
-  const size = level?.size || 5;
+  const size = level?.size || DEFAULT_BOARD_SIZE;
   document.documentElement.style.setProperty("--rowNum", size + "");
   document.documentElement.style.setProperty("--colNum", size + "");
 

@@ -13,6 +13,10 @@ export interface Point {
   y: number
 };
 
+export interface PointWithHex extends Point {
+  colorLabel: string;
+}
+
 export type CellStateMap = { [coordinates: string]: GameCell };
 
 export interface GameCell {

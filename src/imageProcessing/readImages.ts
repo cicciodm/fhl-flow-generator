@@ -1,25 +1,36 @@
 import { readdirSync, writeFile, mkdirSync, writeFileSync } from "fs";
-import { LevelConfig, Level } from 'src/types/LevelConfig';
+import { LevelConfig, Level, PointWithHex, Point } from 'src/types/LevelConfig';
 import Jimp from 'jimp';
-import { range } from 'lodash'
+import { range, zip } from 'lodash'
 import * as ntc from "ntc";
 
-type Difficulty = "easy" | "medium" | "hard";
+type Difficulty = "easiest" | "easy" | "medium" | "moremedium" | "hard";
+
+const difficultySizeMap: { [key: string]: number } = {
+  "easiest": 5,
+  "easy": 6,
+  "medium": 7,
+  "moremedium": 8,
+  "hard": 9,
+}
 
 const difficulties: Difficulty[] = ["easy"];
 
-const GRID_SIZE = 5; // will eventually detect this;
+const GRID_WIDTH = 828;
 
-const CELL_SIDE = 166;
-const GRID_SIDE = CELL_SIDE * GRID_SIZE;
-const TOP_OFFSET = 504;
-
-const xs = range(CELL_SIDE / 2, (CELL_SIDE * (GRID_SIZE + 1)) - CELL_SIDE / 2, CELL_SIDE);
-const ys = xs.map(val => val + TOP_OFFSET);
+// Average for when the grid starts from the top of the picture
+const TOP_OFFSET = 515;
 
 async function createLevelConfigs(fileName?: string): Promise<void> {
+
   for (const difficulty of difficulties) {
-    const path = "levels/" + difficulty;
+    const gridSize = difficultySizeMap[difficulty];
+    const cellSize = GRID_WIDTH / gridSize;
+
+    const xs = range(cellSize / 2, (cellSize * (gridSize + 1)) - cellSize / 2, cellSize);
+    const ys = xs.map(val => val + TOP_OFFSET);
+
+    const path = "levels/" + (fileName ? "" : difficulty);
     let files: string[] = fileName ? [fileName] : [];
 
     let levelConfig: LevelConfig = {
@@ -28,6 +39,7 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
 
     if (!fileName) {
       try {
+        console.log("reading", path);
         files = readdirSync(path);
       } catch (e) {
         throw e;
@@ -46,27 +58,35 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
       image.color([{ apply: "saturate", params: [70] }]);
 
       const level: Level = {
-        size: GRID_SIZE,
+        size: gridSize,
         points: []
       }
+
+      const pointsWithHex: PointWithHex[] = [];
 
       ys.forEach((y, yi) => {
         xs.forEach((x, xi) => {
           const color = image.getPixelColour(x, y);
           const { r, g, b } = Jimp.intToRGBA(color);
 
-          const colorToUse = "#" + convertToHex(r) + convertToHex(g) + convertToHex(b);
-          const colorLabel = ntc.name(colorToUse)[3];
+          const colorHex = "#" + convertToHex(r) + convertToHex(g) + convertToHex(b);
+          const colorLabel = ntc.name(colorHex)[1];
+
+          console.log("Looking at point", x, y, colorHex, "ntc returns", colorLabel, "out of", ntc.name(colorHex));
 
           if (colorLabel !== "Black") {
-            level.points.push({
-              color: colorLabel.toLowerCase(),
+            pointsWithHex.push({
+              color: colorHex,
+              colorLabel: colorLabel,
               x: xi,
               y: yi
             });
           }
         });
       });
+
+      level.points = normalizeColors(pointsWithHex);
+
       levelConfig.levels.push(level);
     }
 
@@ -89,6 +109,27 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
 function convertToHex(val: number): string {
   const converted = val.toString(16);
   return converted === "0" || converted === "f" ? converted + converted : converted;
+}
+
+function normalizeColors(pointWithHex: PointWithHex[]): Point[] {
+  const labelToHexMap: { [key: string]: string } = {};
+
+  const points: Point[] = pointWithHex.map(point => {
+    const { color, colorLabel } = point;
+    let colorToReturn = labelToHexMap[colorLabel];
+
+    if (!colorToReturn) {
+      labelToHexMap[colorLabel] = color;
+      colorToReturn = color;
+    }
+
+    return {
+      ...point,
+      color: colorToReturn
+    };
+  });
+
+  return points;
 }
 
 createLevelConfigs();
