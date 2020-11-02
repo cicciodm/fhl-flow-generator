@@ -1,5 +1,5 @@
 import React from 'react';
-import levelConfig from "../data/levels/easy.json";
+import levelConfig from "../data/levels/hard.json";
 import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
 import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelConfig";
@@ -153,7 +153,7 @@ function getInnerCellForGamePiece(gameCell: GameCell): JSX.Element[] {
     if (piece === "empty") {
       return <></>;
     }
-
+    console.log("Coloring a cell", gameCell.color);
     return (
       <div
         style={{ backgroundColor: gameCell.color }}

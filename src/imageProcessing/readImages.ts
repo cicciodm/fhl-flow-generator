@@ -14,9 +14,10 @@ const difficultySizeMap: { [key: string]: number } = {
   "hard": 9,
 }
 
-const difficulties: Difficulty[] = ["easy"];
+const difficulties: Difficulty[] = ["hard"];
 
 const GRID_WIDTH = 828;
+const BLACK = "#000000"
 
 // Average for when the grid starts from the top of the picture
 const TOP_OFFSET = 515;
@@ -25,9 +26,10 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
 
   for (const difficulty of difficulties) {
     const gridSize = difficultySizeMap[difficulty];
-    const cellSize = GRID_WIDTH / gridSize;
+    const cellSize = Math.round(GRID_WIDTH / gridSize);
+    const halfCell = Math.round(cellSize / 2);
 
-    const xs = range(cellSize / 2, (cellSize * (gridSize + 1)) - cellSize / 2, cellSize);
+    const xs = range(halfCell, (cellSize * (gridSize + 1)) - halfCell, cellSize);
     const ys = xs.map(val => val + TOP_OFFSET);
 
     const path = "levels/" + (fileName ? "" : difficulty);
@@ -54,8 +56,8 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
       const image = await Jimp.read(imagePath);
 
       // see if this works
-      image.contrast(0.60);
-      image.color([{ apply: "saturate", params: [70] }]);
+      // image.contrast(0.50);
+      image.color([{ apply: "saturate", params: [50] }]);
 
       const level: Level = {
         size: gridSize,
@@ -66,18 +68,18 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
 
       ys.forEach((y, yi) => {
         xs.forEach((x, xi) => {
-          const color = image.getPixelColour(x, y);
-          const { r, g, b } = Jimp.intToRGBA(color);
+          const color = image.getPixelColor(x, y);
+          const { r, g, b, a } = Jimp.intToRGBA(color);
+          const colorHex = "#" + convertToHex(r > 25 ? r : 0) + convertToHex(g > 25 ? g : 0) + convertToHex(b > 25 ? b : 0);
+          const ntcColorResult = ntc.name(colorHex);
+          const ntcColorLabel = ntcColorResult[1];
 
-          const colorHex = "#" + convertToHex(r) + convertToHex(g) + convertToHex(b);
-          const colorLabel = ntc.name(colorHex)[1];
+          console.log("Looking at point", x, y, "we have the info", color, r, g, b, "and then", colorHex, ntcColorLabel, ntcColorResult);
 
-          console.log("Looking at point", x, y, colorHex, "ntc returns", colorLabel, "out of", ntc.name(colorHex));
-
-          if (colorLabel !== "Black") {
+          if (colorHex !== BLACK) {
             pointsWithHex.push({
               color: colorHex,
-              colorLabel: colorLabel,
+              colorLabel: ntcColorLabel,
               x: xi,
               y: yi
             });
@@ -108,7 +110,7 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
 
 function convertToHex(val: number): string {
   const converted = val.toString(16);
-  return converted === "0" || converted === "f" ? converted + converted : converted;
+  return converted.length === 1 ? "0" + converted : converted;
 }
 
 function normalizeColors(pointWithHex: PointWithHex[]): Point[] {
