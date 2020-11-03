@@ -27,3 +27,17 @@ export interface GameCell {
 }
 
 export type Piece = "empty" | "dot" | "down" | "left" | "up" | "right";
+
+export type Difficulty = "easiest" | "easy" | "medium" | "moremedium" | "hard";
+
+export const Difficulties: Difficulty[] = [
+  "easiest", "easy", "medium", "moremedium", "hard"
+];
+
+export const DifficultySizeMap: { [key: string]: number } = {
+  "easiest": 5,
+  "easy": 6,
+  "medium": 7,
+  "moremedium": 8,
+  "hard": 9,
+};

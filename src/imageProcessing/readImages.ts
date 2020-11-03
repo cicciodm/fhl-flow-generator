@@ -1,20 +1,8 @@
-import { readdirSync, writeFile, mkdirSync, writeFileSync } from "fs";
-import { LevelConfig, Level, PointWithHex, Point } from 'src/types/LevelConfig';
+import { readdirSync, mkdirSync, writeFileSync } from "fs";
+import { LevelConfig, Level, PointWithHex, Point, Difficulties, DifficultySizeMap } from '../types/LevelConfig';
 import Jimp from 'jimp';
 import { range, zip } from 'lodash'
 import * as ntc from "ntc";
-
-type Difficulty = "easiest" | "easy" | "medium" | "moremedium" | "hard";
-
-const difficultySizeMap: { [key: string]: number } = {
-  "easiest": 5,
-  "easy": 6,
-  "medium": 7,
-  "moremedium": 8,
-  "hard": 9,
-}
-
-const difficulties: Difficulty[] = ["hard"];
 
 const GRID_WIDTH = 828;
 const BLACK = "#000000"
@@ -24,8 +12,8 @@ const TOP_OFFSET = 515;
 
 async function createLevelConfigs(fileName?: string): Promise<void> {
 
-  for (const difficulty of difficulties) {
-    const gridSize = difficultySizeMap[difficulty];
+  for (const difficulty of Difficulties) {
+    const gridSize = DifficultySizeMap[difficulty];
     const cellSize = Math.round(GRID_WIDTH / gridSize);
     const halfCell = Math.round(cellSize / 2);
 

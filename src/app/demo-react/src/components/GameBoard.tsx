@@ -1,12 +1,29 @@
 import React from 'react';
-import levelConfig from "../data/levels/hard.json";
+import hardLevels from "../data/levels/hard.json";
+import easiestLevels from "../data/levels/easiest.json";
+import easyLevels from "../data/levels/easy.json";
+import mediumLevels from "../data/levels/medium.json";
+import moremediumLevels from "../data/levels/moremedium.json";
 import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
-import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelConfig";
+import { Level, CellStateMap, GameCell, Piece, LevelConfig, Difficulty } from "../../../../types/LevelConfig";
 
 const DEFAULT_BOARD_SIZE = 5;
 
+export const Difficulties: Difficulty[] = [
+  "easiest", "easy", "medium", "moremedium", "hard"
+];
+
+const LevelConfigs: { [key: string]: LevelConfig } = {
+  "easiest": easiestLevels,
+  "easy": easyLevels,
+  "medium": mediumLevels,
+  "moremedium": moremediumLevels,
+  "hard": hardLevels
+};
+
 interface GameState {
+  currentDifficulty: number;
   currentLevel: number;
   debugOpen: boolean;
 }
@@ -22,10 +39,15 @@ interface LevelState {
 type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState | null>>;
 
 export default function GameBoard(): JSX.Element {
-  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0, debugOpen: false });
+  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0, currentDifficulty: 0, debugOpen: false });
   const areaRef = React.createRef<HTMLTextAreaElement>();
 
-  const level = levelConfig.levels[gameState.currentLevel] as Level;
+  const { currentDifficulty, currentLevel } = gameState;
+
+  const difficulty = Difficulties[currentDifficulty];
+  const currentLevels = LevelConfigs[difficulty];
+
+  const level = currentLevels?.levels[currentLevel] as Level;
 
   const size = level?.size || DEFAULT_BOARD_SIZE;
   document.documentElement.style.setProperty("--rowNum", size + "");
@@ -35,6 +57,8 @@ export default function GameBoard(): JSX.Element {
   let ys = range(size);
 
   const [levelState, setLevelState] = React.useState<LevelState | null>(getLevelStateFromConfig(level, xs, ys));
+
+  console.log("YOOOO Big render", level, levelState);
 
   if (!level || !levelState) {
     return <h1 className={"winrar"}>A WINRAR IS YOU</h1>;
@@ -64,9 +88,15 @@ export default function GameBoard(): JSX.Element {
       </div>
       {levelState.isComplete && (
         <button className={"nextLevelButton"} onClick={() => {
-          const nextLevelIndex = gameState.currentLevel + 1;
-          const nextLevel = levelConfig.levels[nextLevelIndex];
-          setGameState({ currentLevel: gameState.currentLevel + 1, debugOpen: false });
+          let nextDifficulty = gameState.currentDifficulty;
+          let nextLevelIndex = gameState.currentLevel + 1;
+          if (nextLevelIndex == currentLevels.levels.length) {
+            nextDifficulty = gameState.currentDifficulty + 1;
+            nextLevelIndex = 0;
+          }
+          const nextLevel = currentLevels?.levels[nextLevelIndex];
+          console.log("NextDifficulty, nextLevelIndex, nextLevel", nextDifficulty, nextLevelIndex, nextLevel);
+          setGameState({ currentLevel: nextLevelIndex, currentDifficulty: nextDifficulty, debugOpen: false });
           if (nextLevel) {
             const nextLevelState = getLevelStateFromConfig(nextLevel, xs, ys);
             setLevelState(nextLevelState);
@@ -153,7 +183,7 @@ function getInnerCellForGamePiece(gameCell: GameCell): JSX.Element[] {
     if (piece === "empty") {
       return <></>;
     }
-    console.log("Coloring a cell", gameCell.color);
+
     return (
       <div
         style={{ backgroundColor: gameCell.color }}

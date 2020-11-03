@@ -1,0 +1,57 @@
+{
+  "levels": [
+    {
+      "size": 5,
+      "points": [
+        {
+          "color": "#ffff3d",
+          "colorLabel": "Gorse",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "color": "#269e00",
+          "colorLabel": "Islamic Green",
+          "x": 2,
+          "y": 2
+        },
+        {
+          "color": "#0000f4",
+          "colorLabel": "Blue",
+          "x": 0,
+          "y": 3
+        },
+        {
+          "color": "#269e00",
+          "colorLabel": "Islamic Green",
+          "x": 1,
+          "y": 3
+        },
+        {
+          "color": "#ff2100",
+          "colorLabel": "Scarlet",
+          "x": 2,
+          "y": 3
+        },
+        {
+          "color": "#ffff3d",
+          "colorLabel": "Gorse",
+          "x": 4,
+          "y": 3
+        },
+        {
+          "color": "#ff2100",
+          "colorLabel": "Scarlet",
+          "x": 0,
+          "y": 4
+        },
+        {
+          "color": "#0000f4",
+          "colorLabel": "Blue",
+          "x": 4,
+          "y": 4
+        }
+      ]
+    }
+  ]
+}
