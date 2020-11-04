@@ -1,5 +1,5 @@
 import { readdirSync, mkdirSync, writeFileSync } from "fs";
-import { LevelConfig, Level, PointWithHex, Point, Difficulties, DifficultySizeMap } from '../types/LevelConfig';
+import { LevelList, Level, PointWithHex, Point, Difficulties, DifficultySizeMap } from '../types/LevelConfig';
 import Jimp from 'jimp';
 import { range, zip } from 'lodash'
 import * as ntc from "ntc";
@@ -23,7 +23,7 @@ async function createLevelConfigs(fileName?: string): Promise<void> {
     const path = "levels/" + (fileName ? "" : difficulty);
     let files: string[] = fileName ? [fileName] : [];
 
-    let levelConfig: LevelConfig = {
+    let levelConfig: LevelList = {
       levels: [],
     }
 

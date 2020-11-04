@@ -1,4 +1,4 @@
-export interface LevelConfig {
+export interface LevelList {
   levels: Level[];
 }
 

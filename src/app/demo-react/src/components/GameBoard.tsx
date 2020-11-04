@@ -1,107 +1,42 @@
 import React from 'react';
-import hardLevels from "../data/levels/hard.json";
-import easiestLevels from "../data/levels/easiest.json";
-import easyLevels from "../data/levels/easy.json";
-import mediumLevels from "../data/levels/medium.json";
-import moremediumLevels from "../data/levels/moremedium.json";
 import "./GameBoard.css"
 import { range, difference, groupBy } from "lodash";
-import { Level, CellStateMap, GameCell, Piece, LevelConfig, Difficulty } from "../../../../types/LevelConfig";
-
-const DEFAULT_BOARD_SIZE = 5;
-
-export const Difficulties: Difficulty[] = [
-  "easiest", "easy", "medium", "moremedium", "hard"
-];
-
-const LevelConfigs: { [key: string]: LevelConfig } = {
-  "easiest": easiestLevels,
-  "easy": easyLevels,
-  "medium": mediumLevels,
-  "moremedium": moremediumLevels,
-  "hard": hardLevels
-};
-
-interface GameState {
-  currentDifficulty: number;
-  currentLevel: number;
-  debugOpen: boolean;
-}
+import { Level, CellStateMap, GameCell, Piece } from "../../../../types/LevelConfig";
 
 interface LevelState {
   isComplete: boolean;
+  size: number;
   cellStateMap: CellStateMap;
   isDrawing: boolean;
   drawingColor: string;
   previousCell: GameCell | null;
 }
 
-type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState | null>>;
+export interface GameBoardProps {
+  level: Level,
+  moveToNextLevel: () => void
+}
 
-export default function GameBoard(): JSX.Element {
-  const [gameState, setGameState] = React.useState<GameState>({ currentLevel: 0, currentDifficulty: 0, debugOpen: false });
-  const areaRef = React.createRef<HTMLTextAreaElement>();
+type SetLevelStateCallback = React.Dispatch<React.SetStateAction<LevelState>>;
 
-  const { currentDifficulty, currentLevel } = gameState;
+export default function GameBoard({ level, moveToNextLevel }: GameBoardProps): JSX.Element {
+  const [levelState, setLevelState] = React.useState<LevelState>(getLevelStateFromConfig(level));
 
-  const difficulty = Difficulties[currentDifficulty];
-  const currentLevels = LevelConfigs[difficulty];
+  document.documentElement.style.setProperty("--rowNum", levelState.size + "");
+  document.documentElement.style.setProperty("--colNum", levelState.size + "");
 
-  const level = currentLevels?.levels[currentLevel] as Level;
-
-  const size = level?.size || DEFAULT_BOARD_SIZE;
-  document.documentElement.style.setProperty("--rowNum", size + "");
-  document.documentElement.style.setProperty("--colNum", size + "");
-
-  let xs = range(size);
-  let ys = range(size);
-
-  const [levelState, setLevelState] = React.useState<LevelState | null>(getLevelStateFromConfig(level, xs, ys));
-
-  console.log("YOOOO Big render", level, levelState);
-
-  if (!level || !levelState) {
-    return <h1 className={"winrar"}>A WINRAR IS YOU</h1>;
-  }
+  React.useEffect(() => {
+    const levelState = getLevelStateFromConfig(level);
+    setLevelState(levelState);
+  }, [level])
 
   return (
     <div className={"gameBoardContainer"}>
-      <div className={"debugContainer"}>
-        <button className={"debugButton"} onClick={() => setGameState({ ...gameState, debugOpen: !gameState.debugOpen })}>
-          Open debug
-        </button>
-        {gameState.debugOpen && (
-          <div className={"inputContainer"}>
-            <textarea className={"configTextArea"} ref={areaRef}></textarea>
-            <button className={"debugButton"} onClick={() => {
-              loadCellStateMap(areaRef, levelState, setLevelState);
-              setGameState({ ...gameState, debugOpen: !gameState.debugOpen });
-            }}>
-              Load CellStateMap
-            </button>
-          </div>
-        )}
-      </div>
-      <h1 className={"levelNumber"}>{"Level " + (gameState.currentLevel + 1)}</h1>
       <div className={"gameBoard"}>
-        {getGameComponents(levelState, xs, ys, setLevelState)}
+        {getGameComponents(levelState, setLevelState)}
       </div>
       {levelState.isComplete && (
-        <button className={"nextLevelButton"} onClick={() => {
-          let nextDifficulty = gameState.currentDifficulty;
-          let nextLevelIndex = gameState.currentLevel + 1;
-          if (nextLevelIndex == currentLevels.levels.length) {
-            nextDifficulty = gameState.currentDifficulty + 1;
-            nextLevelIndex = 0;
-          }
-          const nextLevel = currentLevels?.levels[nextLevelIndex];
-          console.log("NextDifficulty, nextLevelIndex, nextLevel", nextDifficulty, nextLevelIndex, nextLevel);
-          setGameState({ currentLevel: nextLevelIndex, currentDifficulty: nextDifficulty, debugOpen: false });
-          if (nextLevel) {
-            const nextLevelState = getLevelStateFromConfig(nextLevel, xs, ys);
-            setLevelState(nextLevelState);
-          }
-        }}>
+        <button className={"nextLevelButton"} onClick={moveToNextLevel}>
           Next Level
         </button>
       )}
@@ -109,26 +44,13 @@ export default function GameBoard(): JSX.Element {
   );
 }
 
-function loadCellStateMap(
-  ref: React.RefObject<HTMLTextAreaElement>,
-  levelState: LevelState,
-  setLevelState: SetLevelStateCallback
-): void {
-  const text = ref.current?.value;
-  console.log(ref.current?.value);
-  if (text) {
-    const toCellStateMap = JSON.parse(text) as CellStateMap;
-    console.log("parsed", toCellStateMap)
-    setLevelState({ ...levelState, cellStateMap: toCellStateMap, isComplete: true });
-  }
-}
-
-function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): LevelState | null {
-  if (!config) {
-    return null;
-  }
+function getLevelStateFromConfig(config: Level): LevelState {
+  const size = config.size;
+  const xs = range(size);
+  const ys = range(size);
 
   const levelState: LevelState = {
+    size,
     isComplete: false,
     cellStateMap: {},
     isDrawing: false,
@@ -157,10 +79,12 @@ function getLevelStateFromConfig(config: Level, xs: number[], ys: number[]): Lev
 
 function getGameComponents(
   levelState: LevelState,
-  xs: number[],
-  ys: number[],
   setLevelState: SetLevelStateCallback
 ): JSX.Element[] {
+  const size = levelState.size;
+  const xs = range(size);
+  const ys = range(size);
+
   return ys.flatMap(y => {
     return xs.map(x => {
       const gameCell = levelState.cellStateMap["" + x + y];
